@@ -1,0 +1,47 @@
+properties([parameters([choice(choices: ['main', 'tns'], name: 'branch'), choice(choices: ['yes', 'no'], name: 'build only'), choice(choices: ['yes', 'no'], name: 'build and deploy')])])
+
+node('docker'){
+    stage("pull source code from github"){
+        git branch: "${params.branch}", url: 'https://github.com/TusharShelke9/dockerfile.git'
+    }
+        parallel admin: {
+        stage ('myapp-admin-pipeline') {
+            sh 'ls'
+        }
+    },
+                front: {
+        stage ('myapp-front-pipeline') {
+            sh 'echo tns'
+        }
+    }
+        parallel nginx: {
+        stage("build dockerfile"){
+          sh 'cd /home/ubuntu/jenkins/workspace/jenkinsfile'    
+          sh 'docker image build -t nginx -f /home/ubuntu/jenkins/workspace/jenkinsfile/Dockerfile .'     
+        }
+    },
+                 ubuntu: {
+        stage("build dockerfile1"){
+          sh 'cd /home/ubuntu/jenkins/workspace/jenkinsfile'    
+          sh 'docker image build -t nginx9 -f /home/ubuntu/jenkins/workspace/jenkinsfile/Dockerfile .'     
+        }
+    }
+        stage("test"){
+            sh 'docker images'
+        }
+        stage("deploy"){
+            def dockerrm = 'docker rm -f $(docker ps -a -q)'
+        sh "${dockerrm}"    
+        sh 'docker run -itd --name deploy -p 9999:80 nginx'
+        }
+        stage("build only"){
+            sh 'docker image build -t nginx -f /home/ubuntu/jenkins/workspace/jenkinsfile/Dockerfile .'     
+        }
+        stage("build and deploy"){
+            sh 'docker image build -t nginx -f /home/ubuntu/jenkins/workspace/jenkinsfile/Dockerfile .'     
+            def dockerrm = 'docker rm -f $(docker ps -a -q)'
+        sh "${dockerrm}"    
+        sh 'docker run -itd --name deploy -p 9999:80 nginx'
+        }
+}
+    
